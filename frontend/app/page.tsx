@@ -52,7 +52,7 @@ const defaultForm: NDAForm = {
 
 function substituteFields(template: string, form: NDAForm): string {
   const mndaTermValue =
-    form.mndaTermType === "expires" ? `${form.mndaTermDuration} year(s)` : "the applicable term";
+    form.mndaTermType === "expires" ? `${form.mndaTermDuration} year(s)` : "termination";
   const confidentialityValue =
     form.confidentialityType === "duration" ? `${form.confidentialityDuration} year(s)` : "perpetuity";
 
@@ -208,7 +208,7 @@ function CoverPage({ form }: { form: NDAForm }) {
           },
           {
             title: "MNDA Modifications",
-            content: <p className="text-sm">{blank(form.modifications) || "None."}</p>,
+            content: <p className="text-sm">{form.modifications || "None."}</p>,
           },
         ].map(({ title, hint, content }) => (
           <section key={title}>
@@ -278,9 +278,12 @@ export default function Page() {
   const [standardTerms, setStandardTerms] = useState<string>("");
 
   useEffect(() => {
-    fetch("/api/template")
-      .then((r) => r.json())
-      .then((data) => setStandardTerms(data.content))
+    fetch("/Mutual-NDA.md")
+      .then((r) => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.text();
+      })
+      .then(setStandardTerms)
       .catch(() => setStandardTerms("*Could not load standard terms.*"));
   }, []);
 
