@@ -1,0 +1,4 @@
+services:
+  backend-test:
+    build: ./backend
+    command: sh -c "uv sync --group dev && uv run pytest tests/ -v"
