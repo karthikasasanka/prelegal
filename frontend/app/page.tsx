@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -274,8 +275,15 @@ function CoverPage({ form }: { form: NDAForm }) {
 }
 
 export default function Page() {
+  const router = useRouter();
   const [form, setForm] = useState<NDAForm>(defaultForm);
   const [standardTerms, setStandardTerms] = useState<string>("");
+
+  useEffect(() => {
+    if (!sessionStorage.getItem("logged_in")) {
+      router.replace("/login");
+    }
+  }, [router]);
 
   useEffect(() => {
     fetch("/Mutual-NDA.md")

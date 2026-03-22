@@ -51,3 +51,6 @@ Thumbs.db
 
 # Devkit
 .devkit/
+
+# Backend database
+backend/data/
