@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,10 +27,12 @@ type NDAForm = {
   party2Date: string;
 };
 
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
 const today = new Date().toISOString().split("T")[0];
 
 const defaultForm: NDAForm = {
-  purpose: "Evaluating whether to enter into a business relationship with the other party.",
+  purpose: "",
   effectiveDate: today,
   mndaTermDuration: "1",
   mndaTermType: "expires",
@@ -50,6 +52,8 @@ const defaultForm: NDAForm = {
   party2Address: "",
   party2Date: today,
 };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function substituteFields(template: string, form: NDAForm): string {
   const mndaTermValue =
@@ -71,75 +75,6 @@ function substituteFields(template: string, form: NDAForm): string {
     result = result.replaceAll(`<span class="coverpage_link">${field}</span>`, `**${value}**`);
   }
   return result;
-}
-
-const inputCls =
-  "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
-      {children}
-    </div>
-  );
-}
-
-function PartyFields({
-  prefix,
-  form,
-  set,
-}: {
-  prefix: "party1" | "party2";
-  form: NDAForm;
-  set: (field: keyof NDAForm, value: string) => void;
-}) {
-  const nameKey = `${prefix}Name` as keyof NDAForm;
-  const titleKey = `${prefix}Title` as keyof NDAForm;
-  const companyKey = `${prefix}Company` as keyof NDAForm;
-  const addressKey = `${prefix}Address` as keyof NDAForm;
-  const dateKey = `${prefix}Date` as keyof NDAForm;
-
-  return (
-    <>
-      <Field label="Print Name">
-        <input type="text" className={inputCls} value={form[nameKey]} onChange={(e) => set(nameKey, e.target.value)} />
-      </Field>
-      <Field label="Title">
-        <input
-          type="text"
-          className={inputCls}
-          value={form[titleKey]}
-          onChange={(e) => set(titleKey, e.target.value)}
-        />
-      </Field>
-      <Field label="Company">
-        <input
-          type="text"
-          className={inputCls}
-          value={form[companyKey]}
-          onChange={(e) => set(companyKey, e.target.value)}
-        />
-      </Field>
-      <Field label="Notice Address" hint="Email or postal address">
-        <input
-          type="text"
-          className={inputCls}
-          value={form[addressKey]}
-          onChange={(e) => set(addressKey, e.target.value)}
-        />
-      </Field>
-      <Field label="Date">
-        <input
-          type="date"
-          className={inputCls}
-          value={form[dateKey]}
-          onChange={(e) => set(dateKey, e.target.value)}
-        />
-      </Field>
-    </>
-  );
 }
 
 function blank(v: string) {
@@ -278,6 +213,11 @@ export default function Page() {
   const router = useRouter();
   const [form, setForm] = useState<NDAForm>(defaultForm);
   const [standardTerms, setStandardTerms] = useState<string>("");
+  const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const apiMessages = useRef<ChatMessage[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!sessionStorage.getItem("logged_in")) {
@@ -295,8 +235,56 @@ export default function Page() {
       .catch(() => setStandardTerms("*Could not load standard terms.*"));
   }, []);
 
-  function set(field: keyof NDAForm, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  // Fetch initial greeting from AI on mount
+  useEffect(() => {
+    const trigger: ChatMessage = { role: "user", content: "Hello" };
+    apiMessages.current = [trigger];
+    setLoading(true);
+    fetch(`${API_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: apiMessages.current }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const aiMsg: ChatMessage = { role: "assistant", content: data.reply };
+        apiMessages.current.push(aiMsg);
+        setDisplayMessages([aiMsg]);
+        if (data.fields) setForm((prev) => ({ ...prev, ...data.fields }));
+      })
+      .catch(() => {
+        setDisplayMessages([{ role: "assistant", content: "Hello! I'm here to help you create a Mutual NDA. What is the purpose of this agreement?" }]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [displayMessages]);
+
+  async function sendMessage() {
+    if (!input.trim() || loading) return;
+
+    const userMsg: ChatMessage = { role: "user", content: input.trim() };
+    apiMessages.current.push(userMsg);
+    setDisplayMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages.current }),
+      });
+      const data = await res.json();
+      const aiMsg: ChatMessage = { role: "assistant", content: data.reply };
+      apiMessages.current.push(aiMsg);
+      setDisplayMessages((prev) => [...prev, aiMsg]);
+      if (data.fields) setForm((prev) => ({ ...prev, ...data.fields }));
+    } finally {
+      setLoading(false);
+    }
   }
 
   const substitutedTerms = standardTerms ? substituteFields(standardTerms, form) : "";
@@ -308,7 +296,7 @@ export default function Page() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Mutual NDA Creator</h1>
-            <p className="text-sm text-gray-500">Fill in the details to generate your agreement.</p>
+            <p className="text-sm text-gray-500">Chat with AI to generate your agreement.</p>
           </div>
           <button
             onClick={() => window.print()}
@@ -320,142 +308,58 @@ export default function Page() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8 items-start">
-        {/* Form — hidden when printing */}
-        <div className="w-96 flex-shrink-0 space-y-5 no-print">
-          <section className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
-            <h2 className="font-semibold text-gray-900">Agreement Details</h2>
+        {/* Chat panel — hidden when printing */}
+        <div className="w-96 flex-shrink-0 no-print" style={{ height: "calc(100vh - 120px)" }}>
+          <div className="bg-white rounded-lg border border-gray-200 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {displayMessages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-xs rounded-lg px-4 py-2 text-sm ${
+                      m.role === "user"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-400 italic">
+                    Thinking...
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
 
-            <Field label="Purpose" hint="How Confidential Information may be used">
-              <textarea
-                className={inputCls}
-                rows={3}
-                value={form.purpose}
-                onChange={(e) => set("purpose", e.target.value)}
-              />
-            </Field>
-
-            <Field label="Effective Date">
-              <input
-                type="date"
-                className={inputCls}
-                value={form.effectiveDate}
-                onChange={(e) => set("effectiveDate", e.target.value)}
-              />
-            </Field>
-
-            <Field label="MNDA Term" hint="The length of this MNDA">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={form.mndaTermType === "expires"}
-                    onChange={() => set("mndaTermType", "expires")}
-                  />
-                  Expires after
-                  <input
-                    type="number"
-                    min="1"
-                    className="w-14 border border-gray-300 rounded px-2 py-1 text-sm"
-                    value={form.mndaTermDuration}
-                    onChange={(e) => set("mndaTermDuration", e.target.value)}
-                  />
-                  year(s)
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={form.mndaTermType === "continues"}
-                    onChange={() => set("mndaTermType", "continues")}
-                  />
-                  Continues until terminated
-                </label>
-              </div>
-            </Field>
-
-            <Field label="Term of Confidentiality" hint="How long Confidential Information is protected">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={form.confidentialityType === "duration"}
-                    onChange={() => set("confidentialityType", "duration")}
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    className="w-14 border border-gray-300 rounded px-2 py-1 text-sm"
-                    value={form.confidentialityDuration}
-                    onChange={(e) => set("confidentialityDuration", e.target.value)}
-                  />
-                  year(s) from Effective Date
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={form.confidentialityType === "perpetuity"}
-                    onChange={() => set("confidentialityType", "perpetuity")}
-                  />
-                  In perpetuity
-                </label>
-              </div>
-            </Field>
-
-            <Field label="Governing Law">
+            <div className="border-t border-gray-200 p-3 flex gap-2">
               <input
                 type="text"
-                className={inputCls}
-                placeholder="e.g. Delaware"
-                value={form.governingLaw}
-                onChange={(e) => set("governingLaw", e.target.value)}
+                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Type your message..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                disabled={loading}
               />
-            </Field>
-
-            <Field label="Jurisdiction">
-              <input
-                type="text"
-                className={inputCls}
-                placeholder="e.g. New Castle, DE"
-                value={form.jurisdiction}
-                onChange={(e) => set("jurisdiction", e.target.value)}
-              />
-            </Field>
-
-            <Field label="MNDA Modifications (optional)">
-              <textarea
-                className={inputCls}
-                rows={2}
-                placeholder="List any modifications to the Standard Terms..."
-                value={form.modifications}
-                onChange={(e) => set("modifications", e.target.value)}
-              />
-            </Field>
-          </section>
-
-          <section className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
-            <h2 className="font-semibold text-gray-900">Party 1</h2>
-            <PartyFields prefix="party1" form={form} set={set} />
-          </section>
-
-          <section className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
-            <h2 className="font-semibold text-gray-900">Party 2</h2>
-            <PartyFields prefix="party2" form={form} set={set} />
-          </section>
-
-          <button
-            onClick={() => window.print()}
-            className="w-full bg-blue-600 text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            Save as PDF
-          </button>
+              <button
+                onClick={sendMessage}
+                disabled={loading || !input.trim()}
+                className="bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Send
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* NDA Document — full preview, only this prints */}
         <div className="flex-1 min-w-0">
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-10 nda-document">
-            {/* Cover page */}
             <CoverPage form={form} />
-
-            {/* Standard terms */}
             {substitutedTerms && (
               <>
                 <hr className="my-10 border-gray-300" />
