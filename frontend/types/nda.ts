@@ -5,13 +5,12 @@ export interface PartyDetails {
   noticeAddress: string
 }
 
-export type MndaTerm =
+export type NdaTerm =
   | { type: 'expires'; years: number }
   | { type: 'perpetual' }
 
-export type ConfidentialityTerm =
-  | { type: 'expires'; years: number }
-  | { type: 'perpetual' }
+export type MndaTerm = NdaTerm
+export type ConfidentialityTerm = NdaTerm
 
 export interface NdaFormData {
   purpose: string

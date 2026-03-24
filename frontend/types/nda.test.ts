@@ -1,50 +1,43 @@
-import { describe, it, expect } from 'vitest'
-import type { NdaFormData, MndaTerm, ConfidentialityTerm, PartyDetails } from './nda'
+import { describe, it, expectTypeOf } from 'vitest'
+import type { NdaFormData, NdaTerm, PartyDetails } from './nda'
 
-const party: PartyDetails = {
-  name: 'Alice Smith',
-  title: 'CEO',
-  company: 'Acme Corp',
-  noticeAddress: 'alice@acme.com',
-}
-
-const expiringMndaTerm: MndaTerm = { type: 'expires', years: 1 }
-const perpetualMndaTerm: MndaTerm = { type: 'perpetual' }
-
-const yearlyConfTerm: ConfidentialityTerm = { type: 'expires', years: 2 }
-const perpetualConfTerm: ConfidentialityTerm = { type: 'perpetual' }
-
-const fullForm: NdaFormData = {
-  purpose: 'Evaluating whether to enter into a business relationship',
-  effectiveDate: '2025-01-01',
-  mndaTerm: expiringMndaTerm,
-  confidentialityTerm: yearlyConfTerm,
-  governingLaw: 'Delaware',
-  jurisdiction: 'courts located in New Castle, DE',
-  party1: party,
-  party2: { ...party, name: 'Bob Jones', company: 'Beta LLC' },
-}
-
-describe('NdaFormData types', () => {
-  it('accepts expiring mnda term', () => {
-    expect(expiringMndaTerm.type).toBe('expires')
+describe('NdaTerm', () => {
+  it('accepts expires variant with years', () => {
+    expectTypeOf({ type: 'expires' as const, years: 1 }).toMatchTypeOf<NdaTerm>()
   })
 
-  it('accepts perpetual mnda term', () => {
-    expect(perpetualMndaTerm.type).toBe('perpetual')
+  it('accepts perpetual variant', () => {
+    expectTypeOf({ type: 'perpetual' as const }).toMatchTypeOf<NdaTerm>()
   })
 
-  it('accepts expires confidentiality term', () => {
-    expect(yearlyConfTerm.type).toBe('expires')
+  it('rejects unknown type', () => {
+    expectTypeOf({ type: 'unknown' as const }).not.toMatchTypeOf<NdaTerm>()
   })
+})
 
-  it('accepts perpetual confidentiality term', () => {
-    expect(perpetualConfTerm.type).toBe('perpetual')
+describe('PartyDetails', () => {
+  it('accepts all required fields', () => {
+    expectTypeOf({
+      name: 'Alice',
+      title: 'CEO',
+      company: 'Acme',
+      noticeAddress: 'alice@acme.com',
+    }).toMatchTypeOf<PartyDetails>()
   })
+})
 
-  it('accepts a complete NdaFormData object', () => {
-    expect(fullForm.party1.company).toBe('Acme Corp')
-    expect(fullForm.party2.company).toBe('Beta LLC')
-    expect(fullForm.governingLaw).toBe('Delaware')
+describe('NdaFormData', () => {
+  it('accepts a complete form object', () => {
+    const party: PartyDetails = { name: 'Alice', title: 'CEO', company: 'Acme', noticeAddress: 'alice@acme.com' }
+    expectTypeOf({
+      purpose: 'Evaluating a business relationship',
+      effectiveDate: '2025-01-01',
+      mndaTerm: { type: 'expires' as const, years: 1 },
+      confidentialityTerm: { type: 'perpetual' as const },
+      governingLaw: 'Delaware',
+      jurisdiction: 'courts located in New Castle, DE',
+      party1: party,
+      party2: { ...party, name: 'Bob', company: 'Beta LLC' },
+    }).toMatchTypeOf<NdaFormData>()
   })
 })
