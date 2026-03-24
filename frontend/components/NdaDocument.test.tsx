@@ -14,8 +14,10 @@ const base: NdaFormData = {
   party2: { name: 'Bob Jones', title: 'CTO', company: 'Globex LLC', noticeAddress: 'bob@globex.com' },
 }
 
-function checkedSpans(container: HTMLElement): number {
-  return Array.from(container.querySelectorAll('span')).filter((s) => s.textContent === '[x]').length
+/** Returns the checkbox mark ('[x]' or '[ ]') for the CheckItem whose label matches `text`. */
+function checkFor(text: RegExp | string): string {
+  const label = screen.getByText(text)
+  return label.parentElement!.querySelector('span')!.textContent!
 }
 
 describe('NdaDocument', () => {
@@ -35,24 +37,42 @@ describe('NdaDocument', () => {
     const { container } = render(<NdaDocument data={base} />)
     const cells = Array.from(container.querySelectorAll('td')).map((c) => c.textContent)
     expect(cells).toContain('Alice Smith')
+    expect(cells).toContain('CEO')
     expect(cells).toContain('Acme Inc')
+    expect(cells).toContain('alice@acme.com')
     expect(cells).toContain('Bob Jones')
+    expect(cells).toContain('CTO')
     expect(cells).toContain('Globex LLC')
+    expect(cells).toContain('bob@globex.com')
   })
 
-  it('checks expires mndaTerm and perpetual confidentialityTerm', () => {
-    const { container } = render(<NdaDocument data={base} />)
-    expect(checkedSpans(container)).toBe(2)
-  })
-
-  it('checks both perpetual when mndaTerm is perpetual', () => {
-    const { container } = render(<NdaDocument data={{ ...base, mndaTerm: { type: 'perpetual' } }} />)
-    expect(checkedSpans(container)).toBe(2)
-  })
-
-  it('shows year count in expires mndaTerm label', () => {
+  it('checks expires mndaTerm and unchecks perpetual', () => {
     render(<NdaDocument data={base} />)
-    expect(screen.getByText(/Expires 2 year\(s\) from Effective Date/)).toBeTruthy()
+    expect(checkFor(/Expires 2 year\(s\) from Effective Date/)).toBe('[x]')
+    expect(checkFor(/Continues until terminated/)).toBe('[ ]')
+  })
+
+  it('checks perpetual mndaTerm and unchecks expires', () => {
+    render(<NdaDocument data={{ ...base, mndaTerm: { type: 'perpetual' } }} />)
+    expect(checkFor(/Continues until terminated/)).toBe('[x]')
+    expect(checkFor(/Expires ___ year\(s\) from Effective Date/)).toBe('[ ]')
+  })
+
+  it('checks perpetual confidentialityTerm and unchecks expires', () => {
+    render(<NdaDocument data={base} />)
+    expect(checkFor('In perpetuity.')).toBe('[x]')
+    expect(checkFor(/___ year\(s\) from Effective Date, but/)).toBe('[ ]')
+  })
+
+  it('checks expires confidentialityTerm and unchecks perpetual', () => {
+    render(<NdaDocument data={{ ...base, confidentialityTerm: { type: 'expires', years: 3 } }} />)
+    expect(checkFor(/3 year\(s\) from Effective Date, but/)).toBe('[x]')
+    expect(checkFor('In perpetuity.')).toBe('[ ]')
+  })
+
+  it('renders fallback placeholder for empty fields', () => {
+    render(<NdaDocument data={{ ...base, purpose: '', effectiveDate: '', governingLaw: '' }} />)
+    expect(screen.getAllByText('___________').length).toBeGreaterThanOrEqual(3)
   })
 
   it('renders a print button that calls window.print', () => {

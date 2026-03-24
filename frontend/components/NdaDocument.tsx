@@ -1,12 +1,13 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { NdaFormData } from '../types/nda'
 
 function termYears(years: number): string {
   return `${years} year(s)`
 }
 
-function CheckItem({ checked, children }: { checked: boolean; children: React.ReactNode }) {
+function CheckItem({ checked, children }: { checked: boolean; children: ReactNode }) {
   return (
     <p className="flex items-start gap-2 text-sm">
       <span className="mt-0.5 shrink-0 text-stone-700">{checked ? '[x]' : '[ ]'}</span>
@@ -15,7 +16,7 @@ function CheckItem({ checked, children }: { checked: boolean; children: React.Re
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
       <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-stone-500">{label}</p>
@@ -38,9 +39,7 @@ export function NdaDocument({ data }: { data: NdaFormData }) {
   const { purpose, effectiveDate, mndaTerm, confidentialityTerm, governingLaw, jurisdiction, party1, party2 } = data
 
   return (
-    <>
-      <style>{`@media print { .no-print { display: none !important; } }`}</style>
-      <article className="mx-auto max-w-2xl space-y-8 bg-stone-50 px-8 py-10 font-serif text-stone-800">
+    <article className="mx-auto max-w-2xl space-y-8 bg-stone-50 px-8 py-10 font-serif text-stone-800">
         <header className="border-b border-stone-300 pb-6">
           <p className="text-xs uppercase tracking-widest text-stone-400">Common Paper</p>
           <h1 className="mt-1 text-2xl font-semibold text-stone-900">Mutual Non-Disclosure Agreement</h1>
@@ -117,7 +116,7 @@ export function NdaDocument({ data }: { data: NdaFormData }) {
           Common Paper Mutual Non-Disclosure Agreement (Version 1.0) free to use under CC BY 4.0.
         </footer>
 
-        <div className="no-print flex justify-end">
+        <div className="flex justify-end print:hidden">
           <button
             onClick={() => window.print()}
             className="border border-stone-800 bg-stone-900 px-6 py-2 text-sm font-medium tracking-wide text-white transition-colors hover:bg-stone-700"
@@ -125,7 +124,6 @@ export function NdaDocument({ data }: { data: NdaFormData }) {
             Print
           </button>
         </div>
-      </article>
-    </>
+    </article>
   )
 }
