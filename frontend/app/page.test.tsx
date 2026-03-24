@@ -1,16 +1,25 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
 import Home from './page'
 
-vi.mock('next/image', () => ({
-  default: ({ src, alt, width, height }: { src: string; alt: string; width?: number; height?: number }) =>
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} width={width} height={height} />,
-}))
-
 describe('Home page', () => {
-  it('renders without crashing', () => {
+  it('renders NdaForm by default', () => {
     render(<Home />)
-    screen.getByText(/get started/i)
+    expect(screen.getByText(/mutual nda/i)).toBeDefined()
+    expect(screen.getByRole('button', { name: /generate agreement/i })).toBeDefined()
+  })
+
+  it('switches to NdaDocument after form submit', () => {
+    render(<Home />)
+    fireEvent.submit(screen.getByRole('button', { name: /generate agreement/i }).closest('form')!)
+    expect(screen.getByRole('heading', { name: /mutual non-disclosure agreement/i })).toBeDefined()
+    expect(screen.getByRole('button', { name: /edit/i })).toBeDefined()
+  })
+
+  it('returns to form when Edit is clicked', () => {
+    render(<Home />)
+    fireEvent.submit(screen.getByRole('button', { name: /generate agreement/i }).closest('form')!)
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }))
+    expect(screen.getByRole('button', { name: /generate agreement/i })).toBeDefined()
   })
 })
