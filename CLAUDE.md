@@ -2,7 +2,7 @@
 
 A platform for drafting common legal agreements. Users fill out a form with party details and agreement terms, and the app renders a completed Mutual NDA (Common Paper MNDA v1.0) ready to sign. Legal templates for MNDA, CSA, DPA, and other CommonPaper agreements are in `templates/`, catalogued in `catalog.json`.
 
-Frontend: Next.js 16 + TypeScript + Tailwind CSS + App Router in `frontend/`. NDA form types in `frontend/types/nda.ts`.
+Frontend: Next.js 16 + TypeScript + Tailwind CSS + App Router in `frontend/`. NDA form types in `frontend/types/nda.ts`. `NdaForm` component in `frontend/components/NdaForm.tsx` — collects all cover-page fields and calls `onSubmit(NdaFormData)`. Home page is still placeholder scaffold.
 
 ## Commands
 
