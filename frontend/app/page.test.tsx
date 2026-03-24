@@ -10,6 +10,6 @@ vi.mock('next/image', () => ({
 describe('Home page', () => {
   it('renders without crashing', () => {
     render(<Home />)
-    expect(screen.getByText(/get started/i)).toBeTruthy()
+    screen.getByText(/get started/i)
   })
 })
