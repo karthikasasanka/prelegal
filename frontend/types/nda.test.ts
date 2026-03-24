@@ -11,7 +11,7 @@ const party: PartyDetails = {
 const expiringMndaTerm: MndaTerm = { type: 'expires', years: 1 }
 const perpetualMndaTerm: MndaTerm = { type: 'perpetual' }
 
-const yearlyConfTerm: ConfidentialityTerm = { type: 'years', years: 2 }
+const yearlyConfTerm: ConfidentialityTerm = { type: 'expires', years: 2 }
 const perpetualConfTerm: ConfidentialityTerm = { type: 'perpetual' }
 
 const fullForm: NdaFormData = {
@@ -34,8 +34,8 @@ describe('NdaFormData types', () => {
     expect(perpetualMndaTerm.type).toBe('perpetual')
   })
 
-  it('accepts years confidentiality term', () => {
-    expect(yearlyConfTerm.type).toBe('years')
+  it('accepts expires confidentiality term', () => {
+    expect(yearlyConfTerm.type).toBe('expires')
   })
 
   it('accepts perpetual confidentiality term', () => {

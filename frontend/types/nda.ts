@@ -10,7 +10,7 @@ export type MndaTerm =
   | { type: 'perpetual' }
 
 export type ConfidentialityTerm =
-  | { type: 'years'; years: number }
+  | { type: 'expires'; years: number }
   | { type: 'perpetual' }
 
 export interface NdaFormData {
