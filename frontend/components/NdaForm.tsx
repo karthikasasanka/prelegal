@@ -15,11 +15,12 @@ function PartySection({
   value: PartyDetails
   onChange: (v: PartyDetails) => void
 }) {
-  const input = (key: keyof PartyDetails, placeholder: string) => (
+  const input = (key: keyof PartyDetails, placeholder: string, required?: boolean) => (
     <input
       value={value[key]}
       onChange={(e) => onChange({ ...value, [key]: e.target.value })}
       placeholder={placeholder}
+      required={required}
       className={inputClass}
     />
   )
@@ -27,10 +28,10 @@ function PartySection({
     <fieldset className="space-y-4">
       <legend className="text-xs font-semibold uppercase tracking-widest text-stone-500">{label}</legend>
       <div className="grid grid-cols-2 gap-4">
-        {input('name', 'Full name')}
+        {input('name', 'Full name', true)}
         {input('title', 'Title')}
       </div>
-      {input('company', 'Company')}
+      {input('company', 'Company', true)}
       <textarea
         value={value.noticeAddress}
         onChange={(e) => onChange({ ...value, noticeAddress: e.target.value })}
@@ -79,7 +80,7 @@ function TermField({
             max={99}
             disabled={value.type !== 'expires'}
             value={expiresYears}
-            onChange={(e) => onChange({ type: 'expires', years: Number(e.target.value) })}
+            onChange={(e) => onChange({ type: 'expires', years: Math.max(1, Number(e.target.value) || 1) })}
             className="w-12 border-b border-stone-300 bg-transparent text-center text-sm focus:border-stone-700 focus:outline-none disabled:opacity-30"
           />
           years
@@ -123,8 +124,9 @@ export function NdaForm({ onSubmit }: { onSubmit: (data: NdaFormData) => void })
       <section className="space-y-6">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-stone-500">Agreement Terms</h2>
         <div>
-          <label className="text-xs text-stone-400">Purpose</label>
+          <label htmlFor="purpose" className="text-xs text-stone-400">Purpose</label>
           <input
+            id="purpose"
             className={inputClass}
             value={form.purpose}
             onChange={(e) => set('purpose', e.target.value)}
@@ -132,8 +134,9 @@ export function NdaForm({ onSubmit }: { onSubmit: (data: NdaFormData) => void })
           />
         </div>
         <div>
-          <label className="text-xs text-stone-400">Effective Date</label>
+          <label htmlFor="effective-date" className="text-xs text-stone-400">Effective Date</label>
           <input
+            id="effective-date"
             className={inputClass}
             type="date"
             value={form.effectiveDate}
@@ -148,8 +151,9 @@ export function NdaForm({ onSubmit }: { onSubmit: (data: NdaFormData) => void })
         />
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-stone-400">Governing Law</label>
+            <label htmlFor="governing-law" className="text-xs text-stone-400">Governing Law</label>
             <input
+              id="governing-law"
               className={inputClass}
               value={form.governingLaw}
               onChange={(e) => set('governingLaw', e.target.value)}
@@ -157,8 +161,9 @@ export function NdaForm({ onSubmit }: { onSubmit: (data: NdaFormData) => void })
             />
           </div>
           <div>
-            <label className="text-xs text-stone-400">Jurisdiction</label>
+            <label htmlFor="jurisdiction" className="text-xs text-stone-400">Jurisdiction</label>
             <input
+              id="jurisdiction"
               className={inputClass}
               value={form.jurisdiction}
               onChange={(e) => set('jurisdiction', e.target.value)}
