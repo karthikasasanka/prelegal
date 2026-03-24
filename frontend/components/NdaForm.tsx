@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { NdaFormData, PartyDetails, NdaTerm } from '../types/nda'
 
+const inputClass =
+  'w-full border-b border-stone-300 bg-transparent py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-stone-700 focus:outline-none'
+
 function PartySection({
   label,
   value,
@@ -17,26 +20,24 @@ function PartySection({
       value={value[key]}
       onChange={(e) => onChange({ ...value, [key]: e.target.value })}
       placeholder={placeholder}
-      className="w-full border-b border-stone-300 bg-transparent py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-stone-700 focus:outline-none"
+      className={inputClass}
     />
   )
   return (
     <fieldset className="space-y-4">
       <legend className="text-xs font-semibold uppercase tracking-widest text-stone-500">{label}</legend>
       <div className="grid grid-cols-2 gap-4">
-        <div>{input('name', 'Full name')}</div>
-        <div>{input('title', 'Title')}</div>
+        {input('name', 'Full name')}
+        {input('title', 'Title')}
       </div>
-      <div>{input('company', 'Company')}</div>
-      <div>
-        <textarea
-          value={value.noticeAddress}
-          onChange={(e) => onChange({ ...value, noticeAddress: e.target.value })}
-          placeholder="Notice address"
-          rows={2}
-          className="w-full border-b border-stone-300 bg-transparent py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-stone-700 focus:outline-none resize-none"
-        />
-      </div>
+      {input('company', 'Company')}
+      <textarea
+        value={value.noticeAddress}
+        onChange={(e) => onChange({ ...value, noticeAddress: e.target.value })}
+        placeholder="Notice address"
+        rows={2}
+        className={`${inputClass} resize-none`}
+      />
     </fieldset>
   )
 }
@@ -90,7 +91,7 @@ function TermField({
 
 const emptyParty = (): PartyDetails => ({ name: '', title: '', company: '', noticeAddress: '' })
 
-const defaultData = (): NdaFormData => ({
+const initFormData = (): NdaFormData => ({
   purpose: '',
   effectiveDate: '',
   mndaTerm: { type: 'perpetual' },
@@ -101,11 +102,8 @@ const defaultData = (): NdaFormData => ({
   party2: emptyParty(),
 })
 
-const inputClass =
-  'w-full border-b border-stone-300 bg-transparent py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-stone-700 focus:outline-none'
-
 export function NdaForm({ onSubmit }: { onSubmit: (data: NdaFormData) => void }) {
-  const [form, setForm] = useState<NdaFormData>(defaultData)
+  const [form, setForm] = useState<NdaFormData>(initFormData)
   const set = <K extends keyof NdaFormData>(key: K, value: NdaFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
