@@ -3,7 +3,8 @@ import { describe, it, expect, vi } from 'vitest'
 import Home from './page'
 
 vi.mock('next/image', () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
+  default: ({ src, alt, width, height }: { src: string; alt: string; width?: number; height?: number }) =>
+    <img src={src} alt={alt} width={width} height={height} />,
 }))
 
 describe('Home page', () => {
