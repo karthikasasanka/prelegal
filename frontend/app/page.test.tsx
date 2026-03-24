@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, vi } from 'vitest'
 import Home from './page'
 
 vi.mock('next/image', () => ({
   default: ({ src, alt, width, height }: { src: string; alt: string; width?: number; height?: number }) =>
+    // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={alt} width={width} height={height} />,
 }))
 
