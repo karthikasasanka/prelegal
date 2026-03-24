@@ -1,9 +1,9 @@
 'use client'
 
-import { NdaFormData, NdaTerm } from '../types/nda'
+import { NdaFormData } from '../types/nda'
 
-function termYears(term: NdaTerm): string {
-  return term.type === 'expires' ? `${term.years} year(s)` : '___ year(s)'
+function termYears(years: number): string {
+  return `${years} year(s)`
 }
 
 function CheckItem({ checked, children }: { checked: boolean; children: React.ReactNode }) {
@@ -61,7 +61,7 @@ export function NdaDocument({ data }: { data: NdaFormData }) {
 
           <Field label="MNDA Term">
             <CheckItem checked={mndaTerm.type === 'expires'}>
-              Expires {termYears(mndaTerm)} from Effective Date.
+              Expires {mndaTerm.type === 'expires' ? termYears(mndaTerm.years) : '___ year(s)'} from Effective Date.
             </CheckItem>
             <CheckItem checked={mndaTerm.type === 'perpetual'}>
               Continues until terminated in accordance with the terms of the MNDA.
@@ -70,7 +70,7 @@ export function NdaDocument({ data }: { data: NdaFormData }) {
 
           <Field label="Term of Confidentiality">
             <CheckItem checked={confidentialityTerm.type === 'expires'}>
-              {termYears(confidentialityTerm)} from Effective Date, but in the case of trade secrets until no longer a
+              {confidentialityTerm.type === 'expires' ? termYears(confidentialityTerm.years) : '___ year(s)'} from Effective Date, but in the case of trade secrets until no longer a
               trade secret under applicable laws.
             </CheckItem>
             <CheckItem checked={confidentialityTerm.type === 'perpetual'}>In perpetuity.</CheckItem>
